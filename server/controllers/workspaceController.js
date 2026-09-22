@@ -1,9 +1,82 @@
 import prisma from "../configs/prisma.js";
+import { clerkClient } from "@clerk/express";
 
 // Get all workspaces for user
 export const getUserWorkspaces = async (req, res) => {
   try {
     const { userId } = await req.auth();
+    console.log("getUserWorkspaces called for userId:", userId);
+
+    // Auto-sync with Clerk if user memberships exist in Clerk
+    try {
+      const clerkMems = await clerkClient.users.getOrganizationMembershipList({ userId });
+      if (clerkMems?.data?.length > 0) {
+        // Ensure user exists in prisma DB
+        const clerkUser = await clerkClient.users.getUser(userId);
+        const email = clerkUser.emailAddresses?.[0]?.emailAddress;
+        const name = `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || email;
+        const image = clerkUser.imageUrl ?? "";
+
+        await prisma.user.upsert({
+          where: { id: userId },
+          update: { email, name, image },
+          create: { id: userId, email, name, image },
+        });
+
+        for (const m of clerkMems.data) {
+          const org = m.organization;
+          const role = m.role?.toLowerCase()?.includes("admin") ? "ADMIN" : "MEMBER";
+          const ownerId = org.createdBy || userId;
+
+          // Ensure owner exists
+          const existingOwner = await prisma.user.findUnique({ where: { id: ownerId } });
+          if (!existingOwner) {
+            try {
+              const clerkOwner = await clerkClient.users.getUser(ownerId);
+              await prisma.user.upsert({
+                where: { id: ownerId },
+                update: {},
+                create: {
+                  id: ownerId,
+                  email: clerkOwner.emailAddresses?.[0]?.emailAddress,
+                  name: `${clerkOwner.firstName ?? ""} ${clerkOwner.lastName ?? ""}`.trim() || "Owner",
+                  image: clerkOwner.imageUrl ?? "",
+                },
+              });
+            } catch (err) {
+              console.warn("Could not fetch org owner from Clerk:", err.message);
+            }
+          }
+
+          // Ensure workspace exists
+          await prisma.workspace.upsert({
+            where: { id: org.id },
+            update: { name: org.name, slug: org.slug, image_url: org.imageUrl ?? "" },
+            create: {
+              id: org.id,
+              name: org.name,
+              slug: org.slug,
+              ownerId,
+              image_url: org.imageUrl ?? "",
+            },
+          });
+
+          // Ensure membership exists
+          await prisma.workspaceMember.upsert({
+            where: { userId_workspaceId: { userId, workspaceId: org.id } },
+            update: { role },
+            create: {
+              userId,
+              workspaceId: org.id,
+              role,
+            },
+          });
+        }
+      }
+    } catch (syncErr) {
+      console.warn("Clerk auto-sync warning:", syncErr.message);
+    }
+
     const workspaces = await prisma.workspace.findMany({
       where: {
         members: { some: { userId: userId } },
@@ -28,6 +101,8 @@ export const getUserWorkspaces = async (req, res) => {
         owner: true,
       },
     });
+
+    console.log("Workspaces found:", workspaces.length);
 
     res.json({ workspaces });
   } catch (error) {

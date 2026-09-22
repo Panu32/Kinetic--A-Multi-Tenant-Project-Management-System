@@ -1,4 +1,5 @@
 import prisma from "../configs/prisma.js";
+import { broadcastToWorkspace } from "../socket/socketManager.js";
 
 // Add comment
 export const addComment = async (req, res) => {
@@ -40,6 +41,13 @@ export const addComment = async (req, res) => {
       },
       include: { user: true },
     });
+
+    // Broadcast the new comment to all members in this workspace
+    broadcastToWorkspace(
+      project.workspaceId,
+      "comment:added",
+      { comment, taskId }
+    );
 
     res.json({ comment });
   } catch (error) {

@@ -1,5 +1,6 @@
 import prisma from "../configs/prisma.js";
 import { inngest } from "../inngest/index.js";
+import { broadcastToWorkspace } from "../socket/socketManager.js";
 
 // Create task
 export const createTask = async (req, res) => {
@@ -64,6 +65,13 @@ export const createTask = async (req, res) => {
       },
     });
 
+    // Broadcast new task to all other members in this workspace
+    broadcastToWorkspace(
+      project.workspaceId,
+      "task:created",
+      taskWithAssignee
+    );
+
     res.json({ task: taskWithAssignee, message: "Task created successfully" });
   } catch (error) {
     console.log(error);
@@ -101,7 +109,15 @@ export const updateTask = async (req, res) => {
     const updatedTask = await prisma.task.update({
       where: { id: req.params.id },
       data: req.body,
+      include: { assignee: true },
     });
+
+    // Broadcast updated task to all other members in this workspace
+    broadcastToWorkspace(
+      project.workspaceId,
+      "task:updated",
+      updatedTask
+    );
 
     res.json({ task: updatedTask, message: "Task updated successfully" });
   } catch (error) {
@@ -139,6 +155,13 @@ export const deleteTask = async (req, res) => {
     await prisma.task.deleteMany({
       where: { id: { in: tasksIds } },
     });
+
+    // Broadcast deletion to all other members in this workspace
+    broadcastToWorkspace(
+      project.workspaceId,
+      "task:deleted",
+      { tasksIds, projectId: project.id }
+    );
 
     res.json({ message: "Task deleted successfully" });
   } catch (error) {

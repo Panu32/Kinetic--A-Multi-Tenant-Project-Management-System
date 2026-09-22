@@ -15,6 +15,7 @@ import ProjectSettings from "../components/ProjectSettings";
 import CreateTaskDialog from "../components/CreateTaskDialog";
 import ProjectCalendar from "../components/ProjectCalendar";
 import ProjectTasks from "../components/ProjectTasks";
+import SprintPlannerModal from "../components/SprintPlannerModal";
 
 export default function ProjectDetail() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -29,6 +30,7 @@ export default function ProjectDetail() {
   const [project, setProject] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [showCreateTask, setShowCreateTask] = useState(false);
+  const [showSprintPlanner, setShowSprintPlanner] = useState(false);
   const [activeTab, setActiveTab] = useState(tab || "tasks");
 
   useEffect(() => {
@@ -89,13 +91,22 @@ export default function ProjectDetail() {
             </span>
           </div>
         </div>
-        <button
-          onClick={() => setShowCreateTask(true)}
-          className="flex items-center gap-2 px-5 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white"
-        >
-          <PlusIcon className="size-4" />
-          New Task
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowSprintPlanner(true)}
+            className="flex items-center gap-2 px-4 py-2 text-sm rounded bg-gradient-to-br from-violet-500 to-indigo-600 text-white hover:opacity-90 transition"
+          >
+            <ZapIcon className="size-4" />
+            Plan with AI
+          </button>
+          <button
+            onClick={() => setShowCreateTask(true)}
+            className="flex items-center gap-2 px-5 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+          >
+            <PlusIcon className="size-4" />
+            New Task
+          </button>
+        </div>
       </div>
 
       {/* Info Cards */}
@@ -198,6 +209,14 @@ export default function ProjectDetail() {
           showCreateTask={showCreateTask}
           setShowCreateTask={setShowCreateTask}
           projectId={id}
+        />
+      )}
+
+      {/* Sprint Planner Modal */}
+      {showSprintPlanner && (
+        <SprintPlannerModal
+          projectId={id}
+          onClose={() => setShowSprintPlanner(false)}
         />
       )}
     </div>

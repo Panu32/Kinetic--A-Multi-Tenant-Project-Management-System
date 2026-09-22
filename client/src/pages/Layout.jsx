@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import { Outlet } from "react-router-dom";
@@ -11,28 +11,90 @@ import {
   useAuth,
   CreateOrganization,
 } from "@clerk/clerk-react";
-import { fetchWorkspaces } from "../features/workspaceSlice";
+import {
+  fetchWorkspaces,
+  addTask,
+  updateTask,
+  deleteTask,
+} from "../features/workspaceSlice";
+import {
+  connectSocket,
+  disconnectSocket,
+  joinWorkspace,
+  getSocket,
+} from "../socket/socket";
 
 const Layout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { loading, workspaces } = useSelector((state) => state.workspace);
+  const { loading, workspaces, currentWorkspace } = useSelector(
+    (state) => state.workspace
+  );
   const dispatch = useDispatch();
 
   const { user, isLoaded } = useUser();
   const { getToken } = useAuth();
 
-  // Initial load of theme
+  // Track which workspace the socket is currently joined to so we can
+  // re-join whenever the user switches workspaces.
+  const joinedWorkspaceRef = useRef(null);
+
+  // ── Initial load of theme ──────────────────────────────────────────────────
   useEffect(() => {
     dispatch(loadTheme());
   }, []);
 
-  // Initial load of workspaces
+  // ── Initial load of workspaces ─────────────────────────────────────────────
   useEffect(() => {
     if (isLoaded && user && workspaces.length === 0) {
       dispatch(fetchWorkspaces({ getToken }));
     }
   }, [user, isLoaded]);
 
+  // ── Socket lifecycle: connect once, wire event handlers ───────────────────
+  useEffect(() => {
+    if (!user) return;
+
+    const socket = connectSocket();
+
+    // ── Real-time event handlers ──
+    // These handlers dispatch into the *existing* Redux reducers — no new
+    // Redux code is needed. The store already knows how to handle these.
+
+    const onTaskCreated = (task) => {
+      dispatch(addTask(task));
+    };
+
+    const onTaskUpdated = (task) => {
+      dispatch(updateTask(task));
+    };
+
+    const onTaskDeleted = ({ tasksIds }) => {
+      dispatch(deleteTask(tasksIds));
+    };
+
+    socket.on("task:created", onTaskCreated);
+    socket.on("task:updated", onTaskUpdated);
+    socket.on("task:deleted", onTaskDeleted);
+
+    // Cleanup: remove listeners when component unmounts
+    return () => {
+      socket.off("task:created", onTaskCreated);
+      socket.off("task:updated", onTaskUpdated);
+      socket.off("task:deleted", onTaskDeleted);
+      disconnectSocket();
+    };
+  }, [user]);
+
+  // ── Join/re-join workspace room whenever currentWorkspace changes ──────────
+  useEffect(() => {
+    if (!currentWorkspace?.id) return;
+    if (joinedWorkspaceRef.current === currentWorkspace.id) return; // already in this room
+
+    joinWorkspace(currentWorkspace.id);
+    joinedWorkspaceRef.current = currentWorkspace.id;
+  }, [currentWorkspace?.id]);
+
+  // ── Auth & loading guards ─────────────────────────────────────────────────
   if (!user) {
     return (
       <div className="flex justify-center items-center h-screen bg-white dark:bg-zinc-950">
@@ -51,7 +113,7 @@ const Layout = () => {
   if (user && workspaces.length === 0) {
     return (
       <div className="min-h-screen flex justify-center items-center bg-white dark:bg-zinc-950">
-        <CreateOrganization />
+        <CreateOrganization afterCreateOrganizationUrl="/" />
       </div>
     );
   }

@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { toggleTheme } from "../features/themeSlice";
 import { MoonIcon, SunIcon } from "lucide-react";
 import { UserButton } from "@clerk/clerk-react";
+import AICopilot from "./AICopilot";
 
 const Navbar = ({ setIsSidebarOpen }) => {
   const dispatch = useDispatch();
@@ -34,6 +35,9 @@ const Navbar = ({ setIsSidebarOpen }) => {
 
         {/* Right section */}
         <div className="flex items-center gap-3">
+          {/* AI Copilot Button */}
+          <AICopilot />
+
           {/* Theme Toggle */}
           <button
             onClick={() => dispatch(toggleTheme())}
@@ -55,3 +59,4 @@ const Navbar = ({ setIsSidebarOpen }) => {
 };
 
 export default Navbar;
+
