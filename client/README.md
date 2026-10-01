@@ -1,8 +1,8 @@
 <div align="center">
-  <h1><img src="https://project-management-gs.vercel.app/favicon.ico" width="20" height="20" alt="project-management Favicon">
-   Project Management - Frontend 📊</h1>
+  <h1><img src="https://project-management-gs.vercel.app/favicon.ico" width="20" height="20" alt="Kinetic Favicon">
+   Kinetic – Multi-Tenant Project Management SaaS 🚀</h1>
   <p>
-    A Full Stack Project Management App in React js Tailwind CSS | PERN Stack Project | Task Management app | Team Management app and Tailwind CSS.
+    A Full Stack AI-powered Multi-Tenant Project Management SaaS built with React, Node.js, Python, and PostgreSQL. Features real-time collaboration, AI sprint planning, task & team management, and multi-workspace support.
   </p>
   <p>
     <a href="https://github.com/elyse502/project-management/blob/main/LICENSE.md"><img src="https://img.shields.io/github/license/elyse502/project-management?style=for-the-badge" alt="License"></a>
