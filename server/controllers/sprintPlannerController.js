@@ -76,7 +76,8 @@ export const sprintPlan = async (req, res) => {
     }
 
     // ── Call Python LangGraph microservice ────────────────────────────────
-    const pyResponse = await fetch("http://127.0.0.1:8000/plan-sprint", {
+    const pythonServiceUrl = process.env.PYTHON_SERVICE_URL || "http://127.0.0.1:8000";
+    const pyResponse = await fetch(`${pythonServiceUrl}/plan-sprint`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

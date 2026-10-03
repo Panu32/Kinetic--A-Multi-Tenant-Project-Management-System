@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import { Outlet } from "react-router-dom";
@@ -13,16 +13,7 @@ import {
 } from "@clerk/clerk-react";
 import {
   fetchWorkspaces,
-  addTask,
-  updateTask,
-  deleteTask,
 } from "../features/workspaceSlice";
-import {
-  connectSocket,
-  disconnectSocket,
-  joinWorkspace,
-  getSocket,
-} from "../socket/socket";
 
 const Layout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -34,9 +25,7 @@ const Layout = () => {
   const { user, isLoaded } = useUser();
   const { getToken } = useAuth();
 
-  // Track which workspace the socket is currently joined to so we can
-  // re-join whenever the user switches workspaces.
-  const joinedWorkspaceRef = useRef(null);
+
 
   // ── Initial load of theme ──────────────────────────────────────────────────
   useEffect(() => {
@@ -50,49 +39,7 @@ const Layout = () => {
     }
   }, [user, isLoaded]);
 
-  // ── Socket lifecycle: connect once, wire event handlers ───────────────────
-  useEffect(() => {
-    if (!user) return;
 
-    const socket = connectSocket();
-
-    // ── Real-time event handlers ──
-    // These handlers dispatch into the *existing* Redux reducers — no new
-    // Redux code is needed. The store already knows how to handle these.
-
-    const onTaskCreated = (task) => {
-      dispatch(addTask(task));
-    };
-
-    const onTaskUpdated = (task) => {
-      dispatch(updateTask(task));
-    };
-
-    const onTaskDeleted = ({ tasksIds }) => {
-      dispatch(deleteTask(tasksIds));
-    };
-
-    socket.on("task:created", onTaskCreated);
-    socket.on("task:updated", onTaskUpdated);
-    socket.on("task:deleted", onTaskDeleted);
-
-    // Cleanup: remove listeners when component unmounts
-    return () => {
-      socket.off("task:created", onTaskCreated);
-      socket.off("task:updated", onTaskUpdated);
-      socket.off("task:deleted", onTaskDeleted);
-      disconnectSocket();
-    };
-  }, [user]);
-
-  // ── Join/re-join workspace room whenever currentWorkspace changes ──────────
-  useEffect(() => {
-    if (!currentWorkspace?.id) return;
-    if (joinedWorkspaceRef.current === currentWorkspace.id) return; // already in this room
-
-    joinWorkspace(currentWorkspace.id);
-    joinedWorkspaceRef.current = currentWorkspace.id;
-  }, [currentWorkspace?.id]);
 
   // ── Auth & loading guards ─────────────────────────────────────────────────
   if (!user) {

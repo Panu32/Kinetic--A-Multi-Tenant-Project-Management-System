@@ -4,9 +4,9 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "postinstall": "npx prisma generate",
+    "build": "npx prisma generate",
     "server": "nodemon server.js",
-    "start": "prisma generate && node server.js"
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
@@ -22,7 +22,6 @@
     "express": "^5.2.1",
     "inngest": "^3.48.1",
     "nodemailer": "^7.0.12",
-    "socket.io": "^4.8.3",
     "ws": "^8.18.3"
   },
   "devDependencies": {

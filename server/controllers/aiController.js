@@ -207,9 +207,11 @@ export const workspaceCopilot = async (req, res) => {
     const groqApiKey = process.env.GROQ_API_KEY;
     let rawAnswer = null;
 
-    // 1. Try Python LangChain Microservice first if it is running on port 8000
+    // 1. Try Python LangChain Microservice first
+    // Falls back to direct Groq API if not reachable.
+    const pythonServiceUrl = process.env.PYTHON_SERVICE_URL || "http://127.0.0.1:8000";
     try {
-      const pyResponse = await fetch("http://127.0.0.1:8000/generate", {
+      const pyResponse = await fetch(`${pythonServiceUrl}/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ context: contextString, question, system_prompt: systemPrompt }),

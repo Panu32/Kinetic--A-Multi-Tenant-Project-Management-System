@@ -3,7 +3,7 @@ import prisma from "../configs/prisma.js";
 import sendEmail from "../configs/nodemailer.js";
 
 // Create a client to send and receive events
-export const inngest = new Inngest({ id: "project-management" });
+export const inngest = new Inngest({ id: "kinetic" });
 
 // Inngest Function to save user data to a database
 const syncUserCreation = inngest.createFunction(

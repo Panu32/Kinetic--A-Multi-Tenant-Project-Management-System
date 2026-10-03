@@ -1,0 +1,52 @@
+services:
+  # ── Node.js / Express API Server ──────────────────────────────────────────
+  - type: web
+    name: kinetic-server
+    runtime: node
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false          # Set in Render dashboard
+      - key: DIRECT_URL
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: INNGEST_EVENT_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: CLIENT_URL
+        sync: false          # Set to your Vercel frontend URL after deploying client
+      - key: PYTHON_SERVICE_URL
+        sync: false          # Set to kinetic-ai-service URL after it's deployed
+
+  # ── Python / FastAPI AI Service ────────────────────────────────────────────
+  - type: web
+    name: kinetic-ai-service
+    runtime: python
+    rootDir: python-server
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: GEMINI_API_KEY
+        sync: false
